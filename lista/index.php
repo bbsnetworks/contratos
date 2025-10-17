@@ -90,6 +90,7 @@ if (!isset($_SESSION['username'])) {
   <script src="../js/bootstrapval.js"></script>
   <script src="../js/booststraptoogletips.js"></script>
   <script src="../js/lista.js"></script>
+  <script src="../js/cancelaciones.js"></script>
   <script src="../js/sidebar.js"></script>
   <script src="../js/swalConfig.js"></script>
   <script>

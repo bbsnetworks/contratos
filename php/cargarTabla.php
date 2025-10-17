@@ -47,6 +47,7 @@ if ($result && $result->num_rows > 0) {
         echo "<th>Paquete</th>";
     }
 
+    echo "<th>Comprobante</th>";   // <-- NUEVA COLUMNA FIJA
     echo "<th>Editar</th>";
     echo "<th>Descargar</th>";
     echo "<th>Crear</th>";
@@ -59,17 +60,17 @@ if ($result && $result->num_rows > 0) {
     }
     echo "</tr></thead><tbody>";
 
-    while($row = $result->fetch_assoc()) {
-        $idc   = (int)$row['idcontrato'];
+    while ($row = $result->fetch_assoc()) {
+        $idc = (int) $row['idcontrato'];
         $nombre = htmlspecialchars($row['nombre'] ?? '', ENT_QUOTES, 'UTF-8');
-        $dir    = htmlspecialchars($row['direccion'] ?? '', ENT_QUOTES, 'UTF-8');
-        $fecha  = htmlspecialchars($row['fecha'] ?? '', ENT_QUOTES, 'UTF-8');
-        $fcanc  = htmlspecialchars($row['fecha_cancelacion'] ?? '', ENT_QUOTES, 'UTF-8');
+        $dir = htmlspecialchars($row['direccion'] ?? '', ENT_QUOTES, 'UTF-8');
+        $fecha = htmlspecialchars($row['fecha'] ?? '', ENT_QUOTES, 'UTF-8');
+        $fcanc = htmlspecialchars($row['fecha_cancelacion'] ?? '', ENT_QUOTES, 'UTF-8');
         $status = strtolower($row['status'] ?? '');
         $tarifa = htmlspecialchars($row['tarifa'] ?? '', ENT_QUOTES, 'UTF-8');
 
         // ¿Existe cliente creado?
-        $sql2= "SELECT CASE 
+        $sql2 = "SELECT CASE 
                     WHEN EXISTS (
                         SELECT 1 
                         FROM contratos c
@@ -81,7 +82,7 @@ if ($result && $result->num_rows > 0) {
         $result2 = $conexion->query($sql2);
         $usuario_creado = 0;
         if ($result2 && $row2 = $result2->fetch_assoc()) {
-            $usuario_creado = (int)$row2['usuario_creado'];
+            $usuario_creado = (int) $row2['usuario_creado'];
         }
 
         echo "<tr>";
@@ -117,18 +118,46 @@ if ($result && $result->num_rows > 0) {
             echo "<td>{$fcanc_fmt}</td>";
         } else {
             $paqueteTxt = '';
-            switch($tarifa){
-                case "1": $paqueteTxt = "Residencial 7 MB/s"; break;
-                case "2": $paqueteTxt = "Residencial 10 MB/s"; break;
-                case "3": $paqueteTxt = "Residencial 15 MB/s"; break;
-                case "4": $paqueteTxt = "Residencial 20 MB/s"; break;
-                case "5": $paqueteTxt = "Residencial 40 MB/s"; break;
-                case "6": $paqueteTxt = "Residencial 50 MB/s"; break;
-                case "7": $paqueteTxt = "Residencial 30 MB/s"; break;
-                case "8": $paqueteTxt = "Residencial 80 MB/s"; break;
-                default:  $paqueteTxt = $tarifa;
+            switch ($tarifa) {
+                case "1":
+                    $paqueteTxt = "Residencial 7 MB/s";
+                    break;
+                case "2":
+                    $paqueteTxt = "Residencial 10 MB/s";
+                    break;
+                case "3":
+                    $paqueteTxt = "Residencial 15 MB/s";
+                    break;
+                case "4":
+                    $paqueteTxt = "Residencial 20 MB/s";
+                    break;
+                case "5":
+                    $paqueteTxt = "Residencial 40 MB/s";
+                    break;
+                case "6":
+                    $paqueteTxt = "Residencial 50 MB/s";
+                    break;
+                case "7":
+                    $paqueteTxt = "Residencial 30 MB/s";
+                    break;
+                case "8":
+                    $paqueteTxt = "Residencial 80 MB/s";
+                    break;
+                default:
+                    $paqueteTxt = $tarifa;
             }
             echo "<td>{$paqueteTxt}</td>";
+        }
+        // Columna "Comprobante": botón solo si está cancelado, en otro caso guion
+        if ($status === 'cancelado') {
+            echo "<td>
+                <button class='btn btn-primary' 
+                title='Descargar comprobante de cancelación'
+                onclick=\"descargarCancelacion({$idc})\">
+                <img src='../img/contrato-error.png' height='20px'/></button>
+                </td>";
+        } else {
+            echo "<td>—</td>";
         }
 
         // Botones comunes
@@ -154,4 +183,4 @@ if ($result && $result->num_rows > 0) {
 $conexion->close();
 
 // Inicializa DataTable
-echo("<script>$('#contratos-table').DataTable();</script>");
+echo ("<script>$('#contratos-table').DataTable();</script>");
