@@ -65,12 +65,13 @@ try {
 
     // 4) Devolvemos los datos completos para el PDF
     $sel = $conexion->prepare("
-      SELECT idcontrato, status, fecha_cancelacion, equipos_devueltos, cancelado_por,
-             folio_cancelacion, nombre, rfc, telefono, marca, modelo, nserie, nequipo,
-             CONCAT(calle,' ',numero,', ',colonia,', ',municipio,', ',estado,' C.P. ',cp) AS direccion
-      FROM contratos
-      WHERE idcontrato=?
-    ");
+  SELECT idcontrato, status, fecha_cancelacion, equipos_devueltos, cancelado_por,
+         folio_cancelacion, nombre, rfc, telefono, modeme, marca, modelo, nserie, nequipo,
+         CONCAT(calle,' ',numero,', ',colonia,', ',municipio,', ',estado,' C.P. ',cp) AS direccion
+  FROM contratos
+  WHERE idcontrato=?
+");
+
     $sel->bind_param("i", $id);
     $sel->execute();
     $res = $sel->get_result()->fetch_assoc();
@@ -95,7 +96,8 @@ try {
         'marca'             => $res['marca'],
         'modelo'            => $res['modelo'],
         'nserie'            => $res['nserie'],
-        'nequipo'           => $res['nequipo']
+        'nequipo'           => $res['nequipo'],
+        'modeme'           => $res['modeme']
       ]
     ]);
 } catch (Exception $e) {
