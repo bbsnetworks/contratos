@@ -201,27 +201,94 @@ function descargarContrato(id) {
     url: "../php/imprimirPDF.php",
     type: "POST",
     data: { id },
-    success: function (response) {
-      const data = JSON.parse(response);
-      imprimirContrato(
-        "" + data.idcontrato, data.nombre, data.rlegal, data.calle, data.numero,
-        data.colonia, data.municipio, data.cp, data.estado, data.telefono, data.ttelefono,
-        data.rfc, data.fecha, data.tarifa, "" + data.tmensualidad, data.reconexion,
-        data.mdesconexion, "" + data.plazo, data.modeme, data.marca, data.modelo,
-        data.nserie, "" + data.nequipo, data.pagoum, "" + data.pequipo, data.domicilioi,
-        data.fechai, data.hora, "" + data.costoi, data.autorizacion, data.mpago,
-        "" + data.vigencia, data.banco, data.notarjeta, data.sadicional1, data.dadicional1,
-        "" + data.costoa1, data.sadicional2, data.dadicional2, "" + data.costoa2,
-        data.sfacturable1, data.dfacturable1, "" + data.costof1, data.sfacturable2,
-        data.dfacturable2, "" + data.costof2, data.ccontrato, data.cderechos,
-        data.cciudad, data.firma1, data.firma2
-      );
-    },
-    error: function (_, textStatus) {
-      $("#resultado").html("Error al eliminar el contrato: " + textStatus);
-    },
+    dataType: "json" // jQuery parsea
+  })
+  .done(function (raw) {
+    // Helpers de defaults
+    const S = (v, d = "") => (v ?? d).toString();
+    const N = (v, d = 0) => Number(v ?? d);
+    const B64PNG = (b) => !b ? "" : (b.startsWith("data:") ? b : `data:image/png;base64,${b}`);
+
+    // Normaliza TODO lo que usa imprimirContrato
+    const data = {
+      idcontrato: S(raw.idcontrato),
+      nombre: S(raw.nombre),
+      rlegal: S(raw.rlegal),
+      calle: S(raw.calle),
+      numero: S(raw.numero),
+      colonia: S(raw.colonia),
+      municipio: S(raw.municipio),
+      cp: S(raw.cp),
+      estado: S(raw.estado),
+      telefono: S(raw.telefono),
+      ttelefono: S(raw.ttelefono),
+      rfc: S(raw.rfc),
+      fecha: S(raw.fecha),
+      tarifa: S(raw.tarifa),
+      tmensualidad: S(raw.tmensualidad, "0"),
+      reconexion: S(raw.reconexion, "0"),
+      mdesconexion: S(raw.mdesconexion, "0"),
+      plazo: S(raw.plazo, "0"),
+      modeme: S(raw.modeme, "0"),
+      marca: S(raw.marca),
+      modelo: S(raw.modelo),
+      nserie: S(raw.nserie),
+      nequipo: S(raw.nequipo, "0"),
+      pagoum: S(raw.pagoum, "0"),
+      pequipo: S(raw.pequipo, "0"),
+      domicilioi: S(raw.domicilioi),
+      fechai: S(raw.fechai),
+      hora: S(raw.hora),
+      costoi: S(raw.costoi),
+      autorizacion: S(raw.autorizacion, "no"),
+      mpago: S(raw.mpago, "0"),
+      vigencia: S(raw.vigencia, "0"),
+      banco: S(raw.banco),
+      notarjeta: S(raw.notarjeta),
+      sadicional1: S(raw.sadicional1),
+      dadicional1: S(raw.dadicional1),
+      costoa1: S(raw.costoa1, "0"),
+      sadicional2: S(raw.sadicional2),
+      dadicional2: S(raw.dadicional2),
+      costoa2: S(raw.costoa2, "0"),
+      sfacturable1: S(raw.sfacturable1),
+      dfacturable1: S(raw.dfacturable1),
+      costof1: S(raw.costof1, "0"),
+      sfacturable2: S(raw.sfacturable2),
+      dfacturable2: S(raw.dfacturable2),
+      costof2: S(raw.costof2, "0"),
+      ccontrato: !!N(raw.ccontrato, 0),
+      cderechos: !!N(raw.cderechos, 0),
+      cciudad: S(raw.cciudad),
+      firma1: B64PNG(raw.firma1), // <-- solo si viene
+      firma2: B64PNG(raw.firma2)  // <--
+    };
+
+    // Llama con defaults seguros
+    imprimirContrato(
+      data.idcontrato, data.nombre, data.rlegal, data.calle, data.numero, data.colonia,
+      data.municipio, data.cp, data.estado, data.telefono, data.ttelefono, data.rfc,
+      data.fecha, data.tarifa, data.tmensualidad, data.reconexion, data.mdesconexion,
+      data.plazo, data.modeme, data.marca, data.modelo, data.nserie, data.nequipo,
+      data.pagoum, data.pequipo, data.domicilioi, data.fechai, data.hora, data.costoi,
+      data.autorizacion, data.mpago, data.vigencia, data.banco, data.notarjeta,
+      data.sadicional1, data.dadicional1, data.costoa1, data.sadicional2, data.dadicional2,
+      data.costoa2, data.sfacturable1, data.dfacturable1, data.costof1, data.sfacturable2,
+      data.dfacturable2, data.costof2, data.ccontrato, data.cderechos, data.cciudad,
+      data.firma1, data.firma2
+    );
+  })
+  .fail(function (jqXHR, textStatus, errorThrown) {
+    console.error("imprimirPDF.php fallo:", textStatus, errorThrown, jqXHR.responseText);
+    Swal.fire({
+      title: "No se pudo obtener el contrato",
+      html: `<pre style="text-align:left;white-space:pre-wrap">${(jqXHR.responseText||"").slice(0,1500)}</pre>`,
+      icon: "error", width: "38rem"
+    });
   });
 }
+
+
 
 /* Altas/ediciones */
 function addContract(id) {
