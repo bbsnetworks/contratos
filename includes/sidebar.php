@@ -21,6 +21,9 @@ $base = '/contratos'; // <-- CAMBIA esto al nombre real de tu carpeta en htdocs 
         <a href="<?= $base ?>/lista/index.php" class="flex items-center gap-2 text-white hover:text-blue-400">
           <i class="fa-solid fa-list"></i> <span>Lista de Contratos</span>
         </a>
+        <a href="<?= $base ?>/resagados/index.php" class="flex items-center gap-2 text-white hover:text-blue-400">
+          <i class="fa-solid fa-user-clock"></i> <span>Resagados</span>
+        </a>
         <a href="<?= $base ?>/../menu/index.php" class="flex items-center gap-2 text-red-400 hover:text-red-600">
           <i class="fas fa-sign-out-alt"></i> <span>Salir a Menu</span>
         </a>

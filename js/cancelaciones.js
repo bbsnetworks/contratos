@@ -157,20 +157,67 @@
     }).then((result) => {
       if (!result.isConfirmed) return;
       const equiposDevueltos = result.value;
-      $.ajax({
-        url: "../php/cancelar_contrato.php",
-        type: "POST",
-        data: JSON.stringify({ id: idcontrato, equipos: equiposDevueltos }),
-        contentType: "application/json",
-        dataType: "json",
-        success: function (res) {
-          if (!res.ok) { Swal.fire("Error", res.message || "No se pudo cancelar.", "error"); return; }
-          Swal.fire("Cancelado", res.message, "success");
-          if (typeof cargarTabla === "function") cargarTabla();
-          generarPDFCancelacion(res.data, { numeroCliente: String(res.data.idcontrato) });
-        },
-        error: function () { Swal.fire("Error", "No se pudo cancelar el contrato.", "error"); }
+      function doCancelar(idcontrato, equiposDevueltos, force = 0) {
+  return $.ajax({
+    url: "../php/cancelar_contrato.php",
+    type: "POST",
+    data: JSON.stringify({ id: idcontrato, equipos: equiposDevueltos, force }),
+    contentType: "application/json",
+    dataType: "json",
+  });
+}
+
+doCancelar(idcontrato, equiposDevueltos, 0)
+  .done(async function (res) {
+    if (res?.conflict) {
+      const html = `
+        <div style="text-align:left">
+          <p><b>⚠ Posible conflicto de cliente</b></p>
+          <p>El <b>ID ${idcontrato}</b> existe en <b>clientes</b> y <b>contratos</b>, pero el nombre no coincide.</p>
+          <hr>
+          <p><b>clientes:</b> ${res?.clientes_nombre || "—"}</p>
+          <p><b>contratos:</b> ${res?.contratos_nombre || "—"}</p>
+          <hr>
+          <p>¿Confirmas que es el <b>mismo cliente</b> y deseas continuar con la cancelación?</p>
+        </div>
+      `;
+
+      const r = await Swal.fire({
+        title: "Verificar identidad",
+        html,
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonText: "Sí, es el mismo (continuar)",
+        cancelButtonText: "No, cancelar",
       });
+
+      if (!r.isConfirmed) return;
+
+      // reintento forzado
+      const res2 = await doCancelar(idcontrato, equiposDevueltos, 1);
+      if (!res2.ok) {
+        Swal.fire("Error", res2.message || "No se pudo cancelar.", "error");
+        return;
+      }
+
+      Swal.fire("Cancelado", res2.message, "success");
+      if (typeof cargarTabla === "function") cargarTabla();
+      generarPDFCancelacion(res2.data, { numeroCliente: String(res2.data.idcontrato) });
+      return;
+    }
+
+    if (!res.ok) {
+      Swal.fire("Error", res.message || "No se pudo cancelar.", "error");
+      return;
+    }
+
+    Swal.fire("Cancelado", res.message, "success");
+    if (typeof cargarTabla === "function") cargarTabla();
+    generarPDFCancelacion(res.data, { numeroCliente: String(res.data.idcontrato) });
+  })
+  .fail(function () {
+    Swal.fire("Error", "No se pudo cancelar el contrato.", "error");
+  });
     });
   }
 
