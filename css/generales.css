@@ -113,6 +113,14 @@ padding: 0;
 	margin-top: 15px;
 	margin-bottom: 15px;
 }
+.input-error {
+  border-color: #ef4444 !important;
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.25) !important;
+  background-color: rgba(127, 29, 29, 0.10) !important;
+}
 
-
+.input-error:focus {
+  border-color: #ef4444 !important;
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.25) !important;
+}
 

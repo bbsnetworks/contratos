@@ -1,37 +1,68 @@
-<!-- sidebar.php -->
 <?php
-$base = '/contratos'; // <-- CAMBIA esto al nombre real de tu carpeta en htdocs si es distinto
-?>
-<!-- Botón abrir menú -->
-  <button id="btn-sidebar" onclick="toggleSidebar()" class="fixed top-4 left-4 z-50 text-white bg-gray-800 p-2 rounded hover:bg-gray-700">
-    <i class="fas fa-bars"></i>
-  </button>
-<div id="sidebar-backdrop" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden" onclick="closeSidebar()"></div>
+$base = '/contratos';
+$current = $_SERVER['REQUEST_URI'] ?? '';
 
-<div id="sidebar" class="fixed top-0 left-0 w-64 h-full bg-gray-900 p-4 z-40 transform -translate-x-full transition-transform duration-300">
-  <div class="flex flex-col justify-between h-full">
-    <div>
-      <div class="text-white text-xl font-bold flex items-center gap-2 mb-8">
-        <img src="<?= $base ?>/img/logo.png" class="w-full" alt="">
-      </div>
-      <nav class="space-y-4">
-        <a href="<?= $base ?>/index.php" onclick="closeSidebar()" class="flex items-center gap-2 text-white hover:text-blue-400">
-          <i class="fa-solid fa-file-contract"></i> <span>Crear Contrato</span>
-        </a>
-        <a href="<?= $base ?>/lista/index.php" class="flex items-center gap-2 text-white hover:text-blue-400">
-          <i class="fa-solid fa-list"></i> <span>Lista de Contratos</span>
-        </a>
-        <a href="<?= $base ?>/resagados/index.php" class="flex items-center gap-2 text-white hover:text-blue-400">
-          <i class="fa-solid fa-user-clock"></i> <span>Resagados</span>
-        </a>
-        <a href="<?= $base ?>/../menu/index.php" class="flex items-center gap-2 text-red-400 hover:text-red-600">
-          <i class="fas fa-sign-out-alt"></i> <span>Salir a Menu</span>
-        </a>
-      </nav>
-    </div>
-  </div>
+function isActive($needle, $current)
+{
+  return strpos($current, $needle) !== false;
+}
+?>
+
+<button id="btn-sidebar" type="button"
+  class="fixed left-4 top-4 z-[999] inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-[#0b1a2d]/90 text-white shadow-xl backdrop-blur-md transition hover:bg-[#10233b]"
+  aria-label="Abrir menú">
+  <i class="bi bi-list text-xl"></i>
+</button>
+
+<!-- Fondo -->
+<div id="sidebar-backdrop" class="fixed inset-0 z-[990] hidden bg-black/60 backdrop-blur-[2px]">
 </div>
 
+<!-- Sidebar -->
+<aside id="sidebar"
+  class="fixed left-0 top-0 z-[995] flex h-full w-72 -translate-x-full flex-col border-r border-white/10 bg-[#071322]/98 shadow-2xl backdrop-blur-xl transition-transform duration-300">
 
+  <!-- Header -->
+  <div class="border-b border-white/10 px-5 py-5">
+    <div class="flex items-center justify-between gap-3">
+      <div class="flex-1">
+        <img src="<?= $base ?>/img/logo.png" class="w-full max-w-[180px]" alt="Logo">
+      </div>
+    </div>
+  </div>
 
+  <!-- Navegación -->
+  <nav class="flex-1 space-y-2 overflow-y-auto px-4 py-5">
+    <a href="<?= $base ?>/index.php"
+      class="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition <?= isActive('/contratos/index.php', $current) ? 'bg-cyan-400/15 text-cyan-300 border border-cyan-400/20' : 'text-white/85 hover:bg-white/5 hover:text-cyan-300' ?>">
+      <i class="bi bi-file-earmark-text w-5 text-center"></i>
+      <span>Crear contrato Antena</span>
+    </a>
 
+    <a href="<?= $base ?>/fibra/index.php"
+      class="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition <?= isActive('/contratos/fibra/', $current) ? 'bg-cyan-400/15 text-cyan-300 border border-cyan-400/20' : 'text-white/85 hover:bg-white/5 hover:text-cyan-300' ?>">
+      <i class="bi bi-modem-fill"></i>
+      <span>Crear contrato Fibra</span>
+    </a>
+    <a href="<?= $base ?>/lista/index.php"
+      class="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition <?= isActive('/contratos/lista/', $current) ? 'bg-cyan-400/15 text-cyan-300 border border-cyan-400/20' : 'text-white/85 hover:bg-white/5 hover:text-cyan-300' ?>">
+      <i class="bi bi-list-ul w-5 text-center"></i>
+      <span>Lista de contratos</span>
+    </a>
+
+    <a href="<?= $base ?>/resagados/index.php"
+      class="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition <?= isActive('/contratos/resagados/', $current) ? 'bg-cyan-400/15 text-cyan-300 border border-cyan-400/20' : 'text-white/85 hover:bg-white/5 hover:text-cyan-300' ?>">
+      <i class="bi bi-clock-history w-5 text-center"></i>
+      <span>Rezagados</span>
+    </a>
+  </nav>
+
+  <!-- Footer -->
+  <div class="border-t border-white/10 p-4">
+    <a href="<?= $base ?>/../menu/index.php"
+      class="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium text-red-300 transition hover:bg-red-500/10 hover:text-red-200">
+      <i class="bi bi-box-arrow-left w-5 text-center"></i>
+      <span>Salir al menú</span>
+    </a>
+  </div>
+</aside>

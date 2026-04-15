@@ -49,9 +49,9 @@ if ($conexion->connect_error) {
         $completa = $direccion . ' ' . $numero;
 
         if ($row2['modeme']== '1') {
-          $modeme="PRESTADO";  
+          $modeme="COMODATO";  
       }else if ($row2["modeme"]== '2') {
-        $modeme= 'COMPRADO';
+        $modeme= 'COMPRAVENTA';
         }
 
         if ($row2['tarifa']== '1') {

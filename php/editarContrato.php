@@ -1,600 +1,524 @@
 <?php
 include('conexion.php');
 
-$idcontrato = $_POST['id'];
+$idcontrato = (int)($_POST['id'] ?? 0);
 
 if ($conexion->connect_error) {
     die('Conexión fallida: ' . $conexion->connect_error);
 }
 
-$sql = 'SELECT * from contratos where idcontrato='.(int)$idcontrato;
+$sql = "SELECT * FROM contratos WHERE idcontrato = $idcontrato";
 $result = $conexion->query($sql);
 
-if ($result && $result->num_rows > 0) {
-    while($row = $result->fetch_assoc()) {
+if (!$result || $result->num_rows === 0) {
+    echo "<div class='text-red-400'>No se encontró el contrato.</div>";
+    exit;
+}
 
-        // ===== Valores normalizados para la sección de cancelación =====
-        $fechaCancInput = '';
-        if (!empty($row['fecha_cancelacion'])) {
-            $fechaCancInput = date('Y-m-d\TH:i', strtotime($row['fecha_cancelacion']));
-        }
-        $equiposDevueltosVal = htmlspecialchars($row['equipos_devueltos'] ?? '', ENT_QUOTES, 'UTF-8');
-        // =================================================================
+$row = $result->fetch_assoc();
 
-        echo "
-  <form class='row centrar needs-validation' id='form' novalidate>
-    <div class='row'>
-      <div class='col-12 encabezado'>
-        <span>TEKNE SEND.4, S. DE R.L. DE C.V.<br>
-          RFC: TSE230302694<br>
-          DOMICILIO: EDUARDO ECHEVERRÍA, NÚMERO 21, INTERIOR B, LOCALIDAD MONTE DE LOS JUÁREZ, C.P. 38950, YURIRIA,
-          GUANAJUATO.
-        </span>
+$fechaCancInput = '';
+if (!empty($row['fecha_cancelacion'])) {
+    $fechaCancInput = date('Y-m-d\TH:i', strtotime($row['fecha_cancelacion']));
+}
+
+$equiposDevueltosVal = htmlspecialchars($row['equipos_devueltos'] ?? '', ENT_QUOTES, 'UTF-8');
+
+function h($v) {
+    return htmlspecialchars($v ?? '', ENT_QUOTES, 'UTF-8');
+}
+
+function selected($a, $b) {
+    return (string)$a === (string)$b ? 'selected' : '';
+}
+
+function checkedAttr($cond) {
+    return $cond ? 'checked' : '';
+}
+?>
+
+<form id="form" class="space-y-6" novalidate>
+  <!-- Encabezado -->
+  <section class="rounded-3xl border border-white/10 bg-white/5 p-6 shadow-xl">
+    <div class="text-center">
+      <h2 class="text-lg font-semibold tracking-wide text-cyan-300">TEKNE SEND.4, S. DE R.L. DE C.V.</h2>
+      <p class="mt-2 text-sm leading-6 text-white/80">
+        RFC: TSE230302694<br>
+        DOMICILIO: EDUARDO ECHEVERRÍA, NÚMERO 21, INTERIOR B, LOCALIDAD MONTE DE LOS JUÁREZ, C.P. 38950, YURIRIA, GUANAJUATO.
+      </p>
+    </div>
+  </section>
+
+  <!-- Datos generales -->
+  <section class="rounded-3xl border border-white/10 bg-[#0b1a2d] p-6 shadow-xl">
+    <div class="grid grid-cols-1 gap-5 md:grid-cols-12">
+      <div class="md:col-span-4">
+        <label for="ncontrato" class="mb-2 block text-sm font-medium text-white/80">Contrato No</label>
+        <input type="number" id="ncontrato" name="ncontrato" value="<?= h($row['idcontrato']) ?>" disabled
+          class="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white/70 outline-none">
       </div>
-      <!-- <div class='col-12 centrar tittle'><span>Primera Parte</span></div> -->
-      <div class='col-md-4'>
-        <label for='inputEmail4' class='form-label'>Contrato No</label>
-        <input type='number' class='form-control requerido' id='ncontrato' name='ncontrato' value='".$row['idcontrato']."' novalidate disabled>
-        <div id='error-message' style='color:red;'></div>
+
+      <div class="md:col-span-4">
+        <label for="fechac" class="mb-2 block text-sm font-medium text-white/80">Fecha</label>
+        <input type="date" id="fechac" name="fechac" value="<?= h($row['fecha']) ?>" required
+          class="requerido w-full rounded-2xl border border-white/10 bg-[#071322] px-4 py-3 text-white outline-none focus:border-cyan-400/40">
       </div>
-      <div class='col-md-6 space centrar d-none' id='euser'>
-        <div class='form-check' id='divContrato'>
-          <input class='form-check-input' type='checkbox' id='scontrato' name='scontrato'>
-          <label class='form-check-label' for='scontrato'>
-            Estoy de acuerdo de sobreescribir el contrato ya existente
+
+      <div class="md:col-span-12">
+        <div id="euser" class="hidden">
+          <label class="flex items-center gap-3 rounded-xl border border-amber-400/20 bg-amber-400/10 px-4 py-3 text-sm text-amber-200">
+            <input type="checkbox" id="scontrato" name="scontrato" class="h-4 w-4 rounded border-white/20 bg-transparent">
+            Estoy de acuerdo en sobreescribir el contrato ya existente
           </label>
         </div>
-      </div>
-      <div class='col-md-12 centrar space'>
-        <span class='titulo'>Contacto del Cliente</span>
-      </div>
-      <div class='col-md-6'>
-        <label for='inputEmail4' class='form-label'>NOMBRE/RAZÓN O DENOMINACIÓN SOCIAL</label>
-        <input type='text' class='form-control requerido' id='name' name='name' value='".$row['nombre']."' required novalidate>
-      </div>
-      <div class='col-md-6'>
-        <label for='inputPassword4' class='form-label'>REPRESENTANTE LEGAL</label>
-        <input type='text' class='form-control' id='rlegal' name='rlegal' value='".$row['rlegal']."'>
-      </div>
-      <div class='col-md-4'>
-        <label for='inputEmail4' class='form-label'>Calle</label>
-        <input type='text' class='form-control requerido' id='street' name='calle' value='".$row['calle']."' required novalidate>
-      </div>
-      <div class='col-md-2'>
-        <label for='inputPassword4' class='form-label'>Numero</label>
-        <input type='text' class='form-control requerido' id='number' name='number' value='".$row['numero']."' required novalidate>
-      </div>
-      <div class='col-md-2'>
-        <label for='inputPassword4' class='form-label'>Colonia</label>
-        <input type='text' class='form-control requerido' id='colonia' name='colonia' value='".$row['colonia']."' required novalidate>
-      </div>
-      <div class='col-md-4'>
-        <label for='inputPassword4' class='form-label'>Municipio</label>
-        <input type='text' class='form-control requerido' id='municipio' name='municipio' value='".$row['municipio']."' required novalidate
-          onchange='cambioCiudad()'>
-      </div>
-      <div class='col-md-4'>
-        <label for='inputPassword4' class='form-label'>CP</label>
-        <input type='text' class='form-control' id='cp' name='cp' value='".$row['cp']."' novalidate minlength='4' maxlength='5'>
-      </div>
-      <div class='col-md-2'>
-        <label for='inputPassword4' class='form-label'>Estado</label>
-        <input type='text' class='form-control requerido' id='estado' name='estado' value='".$row['estado']."' required novalidate>
-      </div>
-      <div class='col-md-4'>
-        <label for='inputPassword4' class='form-label'>Telefono</label>
-        <input type='text' class='form-control requerido' id='telefono' name='telefono' value='".$row['telefono']."' required novalidate
-          minlength='10' maxlength='15'>
-      </div>
-      ";
-
-        if($row['ttelefono']=="movil"){
-            echo "<div class='col-md-2'>
-        <label for='inputPassword4' class='form-label'>TELÉFONO MÓVIL/FIJO</label>
-        <div class='form-check'>
-        <input class='form-check-input' type='radio' name='ttipo' id='movil' value='movil' checked>
-          <label class='form-check-label' for='flexRadioDefault1'>
-            Fijo
-          </label>
-        </div>
-        <div class='form-check'>
-          <input class='form-check-input' type='radio' name='ttipo' id='fijo' value='fijo'>
-          <label class='form-check-label' for='flexRadioDefault2'>
-            Movil
-          </label>
-        </div>
-      </div>";
-        } else {
-            echo "<div class='col-md-2'>
-        <label for='inputPassword4' class='form-label'>TELÉFONO MÓVIL/FIJO</label>
-        <div class='form-check'>
-        <input class='form-check-input' type='radio' name='ttipo' id='movil' value='movil'>
-          <label class='form-check-label' for='flexRadioDefault1'>
-            Fijo
-          </label>
-        </div>
-        <div class='form-check'>
-          <input class='form-check-input' type='radio' name='ttipo' id='fijo' value='fijo' checked>
-          <label class='form-check-label' for='flexRadioDefault2'>
-            Movil
-          </label>
-        </div>
-      </div>";
-        }
-          
-      echo "<div class='col-md-4'>
-        <label for='inputPassword4' class='form-label'>RFC</label>
-        <input type='text' class='form-control' id='rfc' name='rfc' value='".$row['rfc']."' maxlength='13'>
-      </div>
-      <div class='col-md-4'>
-        <label for='inputPassword4' class='form-label'>Fecha</label>
-        <input type='date' class='form-control requerido' id='fechac' name='fechac' value='".$row['fecha']."' required>
-      </div>
-
-      <div class='col-md-12 centrar space txt-center'>
-        <span class='titulo'>Servicio de Internet Fijo en Casa</span>
-      </div>
-      <div class='col-md-4'>
-        <label for='inputPassword4' class='form-label'>Tarifa:</label>";
-
-        switch ($row["tarifa"]) {
-            case "1":
-        echo "<select class='form-select' aria-label='Default select example' name='tarifa' id='tarifa'>
-          <option value='1' selected>Residencial 7 MB/s</option>
-          <option value='2'>Residencial 10 MB/s</option>
-          <option value='3'>Residencial 15 MB/s</option>
-          <option value='4'>Residencial 20 MB/s</option>
-          <option value='7'>Residencial 30 MB/s</option>
-          <option value='5'>Residencial 40 MB/s</option>
-          <option value='6'>Residencial 50 MB/s</option>
-            </select>";
-            break;
-            case "2":
-                echo "<select class='form-select' aria-label='Default select example' name='tarifa' id='tarifa'>
-          <option value='1'>Residencial 7 MB/s</option>
-          <option value='2' selected>Residencial 10 MB/s</option>
-          <option value='3'>Residencial 15 MB/s</option>
-          <option value='4'>Residencial 20 MB/s</option>
-          <option value='7'>Residencial 30 MB/s</option>
-          <option value='5'>Residencial 40 MB/s</option>
-          <option value='6'>Residencial 50 MB/s</option>
-            </select>";
-            break;  
-            case "3":
-                echo "<select class='form-select' aria-label='Default select example' name='tarifa' id='tarifa'>
-          <option value='1'>Residencial 7 MB/s</option>
-          <option value='2'>Residencial 10 MB/s</option>
-          <option value='3' selected>Residencial 15 MB/s</option>
-          <option value='4'>Residencial 20 MB/s</option>
-          <option value='7'>Residencial 30 MB/s</option>
-          <option value='5'>Residencial 40 MB/s</option>
-          <option value='6'>Residencial 50 MB/s</option>
-            </select>";
-            break;
-            case "4":
-            echo "<select class='form-select' aria-label='Default select example' name='tarifa' id='tarifa'>
-          <option value='1'>Residencial 7 MB/s</option>
-          <option value='2'>Residencial 10 MB/s</option>
-          <option value='3'>Residencial 15 MB/s</option>
-          <option value='4' selected>Residencial 20 MB/s</option>
-          <option value='7'>Residencial 30 MB/s</option>
-          <option value='5'>Residencial 40 MB/s</option>
-          <option value='6'>Residencial 50 MB/s</option>
-            </select>";
-            break;    
-            case "5":
-            echo "<select class='form-select' aria-label='Default select example' name='tarifa' id='tarifa'>
-          <option value='1'>Residencial 7 MB/s</option>
-          <option value='2'>Residencial 10 MB/s</option>
-          <option value='3'>Residencial 15 MB/s</option>
-          <option value='4'>Residencial 20 MB/s</option>
-          <option value='7'>Residencial 30 MB/s</option>
-          <option value='5' selected>Residencial 40 MB/s</option>
-          <option value='6'>Residencial 50 MB/s</option>
-                        </select>";
-            break;
-            case "6":
-              echo "<select class='form-select' aria-label='Default select example' name='tarifa' id='tarifa'>
-            <option value='1'>Residencial 7 MB/s</option>
-            <option value='2'>Residencial 10 MB/s</option>
-            <option value='3'>Residencial 15 MB/s</option>
-            <option value='4'>Residencial 20 MB/s</option>
-            <option value='7'>Residencial 30 MB/s</option>
-            <option value='5'>Residencial 40 MB/s</option>
-            <option value='6' selected>Residencial 50 MB/s</option>
-                          </select>";
-              break;
-              case "7":
-                echo "<select class='form-select' aria-label='Default select example' name='tarifa' id='tarifa'>
-              <option value='1'>Residencial 7 MB/s</option>
-              <option value='2'>Residencial 10 MB/s</option>
-              <option value='3'>Residencial 15 MB/s</option>
-              <option value='4'>Residencial 20 MB/s</option>
-              <option value='7' selected>Residencial 30 MB/s</option>
-              <option value='5'>Residencial 40 MB/s</option>
-              <option value='6'>Residencial 50 MB/s</option>
-                            </select>";
-                break;  
-        }
-        
-      echo "</div>
-
-      <div class='col-md-4'>
-        <label for='inputPassword4' class='form-label'>Total Mensualidad:</label>
-        <input type='text' class='form-control requerido' id='totalm' name='totalm' placeholder='$' value='".$row['tmensualidad']."'
-          required>
-      </div>";
-      if($row['reconexion']== '1'){
-        echo "<div class='col-md-4'>
-        <label for='inputPassword4' class='form-label'>Aplica tarifa por reconexión:</label>
-        <select class='form-select' aria-label='Default select example' id='reconexion' name='reconexion'>
-          <option value='1' selected>No</option>
-          <option value='2'>Si</option>
-        </select>
-      </div>";
-      } else {
-        echo "<div class='col-md-4'>
-        <label for='inputPassword4' class='form-label'>Aplica tarifa por reconexión:</label>
-        <select class='form-select' aria-label='Default select example' id='reconexion' name='reconexion'>
-          <option value='1'>No</option>
-          <option value='2' selected>Si</option>
-        </select>
-      </div>";
-      }
-      
-      echo "<div class='col-md-4'>
-        <label for='inputPassword4' class='form-label'>Monto por Desconexion:</label>
-        <input type='text' class='form-control' id='descm' name='descm' disabled value='".$row['mdesconexion']."'>
-      </div>
-      <div class='col-md-4'>
-        <label for='inputPassword4' class='form-label'>Plazo mínimo en meses (0-12): <span data-bs-toggle='tooltip'
-            data-bs-placement='top'
-            data-bs-title='Pagando el costo remanente del equipo sin penalidad por el servicio'><i
-              class='bi bi-question-circle'></i></span></label>
-        <input type='number' class='form-control requerido' id='pmeses' name='pmeses' min='0' value='".$row['plazo']."' required>
-      </div>
-      <div class='col-12 aviso'>
-        <span>(En el Estado de cuenta y/o factura se podrá visualizar la fecha de corte del servicio y fecha de
-          pago.)</span>
-      </div>
-      <div class='col-md-12 centrar space'>
-        <span class='titulo'>Datos del Equipo</span>
-      </div>";
-
-      if($row['modeme']== '1'){
-        echo "<div class='col-md-4'>
-        <label for='inputPassword4' class='form-label'>Modem Entregado</label>
-        <select class='form-select' aria-label='Default select example' id='modemt' name='modemt'>
-          <option value='1' selected>Comodato</option>
-          <option value='2'>Compraventa</option>
-        </select>
-      </div>";
-      } else {
-        echo "<div class='col-md-4'>
-        <label for='inputPassword4' class='form-label'>Modem Entregado</label>
-        <select class='form-select' aria-label='Default select example' id='modemt' name='modemt'>
-          <option value='1'>Comodato</option>
-          <option value='2' selected>Compraventa</option>
-        </select>
-      </div>";
-      }
-      
-      echo "<div class='col-md-4'>
-        <label for='inputPassword4' class='form-label'>Marca</label>
-        <input type='text' class='form-control requerido' id='marca' name='marca' value='".$row['marca']."' required>
-      </div>
-      <div class='col-md-4'>
-        <label for='inputPassword4' class='form-label'>Modelo</label>
-        <input type='text' class='form-control requerido' id='modelo' name='modelo' value='".$row['modelo']."' required>
-      </div>
-      <div class='col-md-4'>
-        <label for='inputPassword4' class='form-label'>Numero de Serie</label>
-        <input type='text' class='form-control requerido' id='serie' name='serie' value='".$row['nserie']."' required>
-      </div>
-      <div class='col-md-4'>
-        <label for='inputPassword4' class='form-label'>Numero de Equipos</label>
-        <input type='number' class='form-control requerido' id='nequipos' name='nequipos' value='".$row['nequipo']."' required maxlength='50' min='1'>
-      </div>
-      <div class='col-12 aviso text-center'>
-        <span>
-          Garantía de cumplimiento de obligación<br>
-          Pagaré para garantizar la devolución del equipo entregado SOLO en comodato.
-          Visible en el anexo de la presente carátula y contrato de adhesión.
-
-        </span>
-      </div>";
-
-      switch ($row["pagoum"]) {
-        case "1":
-            echo "<div class='col-md-4'>
-        <label for='inputPassword4' class='form-label'>Pago Unico/Mes :</label>
-        <select class='form-select' aria-label='Default select example' id='tpago' name='tpago'>
-          <option value='1' selected>Pago Unico</option>
-          <option value='2'>Mes</option>
-          <option value='3'>Vacio</option>
-        </select>
-      </div>";
-        break;
-        case "2":
-            echo "<div class='col-md-4'>
-        <label for='inputPassword4' class='form-label'>Pago Unico/Mes :</label>
-        <select class='form-select' aria-label='Default select example' id='tpago' name='tpago'>
-          <option value='1'>Pago Unico</option>
-          <option value='2' selected>Mes</option>
-          <option value='3'>Vacio</option>
-        </select>
-      </div>";
-        break;
-         case "3":
-            echo "<div class='col-md-4'>
-        <label for='inputPassword4' class='form-label'>Pago Unico/Mes :</label>
-        <select class='form-select' aria-label='Default select example' id='tpago' name='tpago'>
-          <option value='1'>Pago Unico</option>
-          <option value='2'>Mes</option>
-          <option value='3' selected>Vacio</option>
-        </select>
-      </div>";
-        break;
-      }
-     
-      echo "<div class='col-md-4'>
-        <label for='inputPassword4' class='form-label'>Cantidad a Pagar por Equipo</label>
-        <input type='number' class='form-control' id='cequipos' name='cequipos' value='".$row['pequipo']."'>
-      </div>
-      <div class='col-md-12 centrar space'>
-        <span class='titulo'>Instalacion de Equipo</span>
-      </div>
-      <div class='col-md-6'>
-        <label for='inputPassword4' class='form-label'>Domicilio de la Instalacion</label>
-        <input type='text' class='form-control requerido' id='domicilioi' name='domicilioi' value='".$row['domicilioi']."' required>
-      </div>
-      <div class='col-md-3'>
-        <label for='inputPassword4' class='form-label'>Fecha</label>
-        <input type='date' class='form-control requerido' id='fechai' name='fechai' value='".$row['fechai']."' required>
-      </div>
-      <div class='col-md-3'>
-        <label for='inputPassword4' class='form-label'>Hora</label>
-        <input type='time' class='form-control requerido' id='horai' name='horai' value='".$row['hora']."' required>
-      </div>
-      <div class='col-md-4'>
-        <label for='inputPassword4' class='form-label'>Costo</label>
-        <input type='text' class='form-control requerido' id='costoi' name='costoi' placeholder='$' value='".$row['costoi']."' required>
-      </div>
-      <div class='col-12 aviso text-center'>
-        <span>
-          EL PROVEEDOR' deberá efectuar las instalaciones y empezar a prestar el servicio en un plazo que no exceda de
-          10 días hábiles a partir de la firma del contrato
-
-        </span>
-      </div>
-      <div class='col-md-12 centrar space'>
-        <span class='titulo'>Metodo de Pago</span>
-      </div>";
-
-      if($row["autorizacion"]== "si"){
-        echo "<div class='col-md-4'>
-        <label for='inputPassword4' class='form-label'>Autorizacion por cargo a tarjeta</label>
-        <div class='form-check'>
-          <input class='form-check-input' type='radio' name='acargo' id='flexRadioDefault1' value='si' checked>
-          <label class='form-check-label' for='flexRadioDefault1'>
-            Si
-          </label>
-        </div>
-        <div class='form-check'>
-          <input class='form-check-input' type='radio' name='acargo' id='flexRadioDefault2' value='no'>
-          <label class='form-check-label' for='flexRadioDefault2'>
-            No
-          </label>
-        </div>
-      </div>";
-      } else {
-        echo "<div class='col-md-4'>
-        <label for='inputPassword4' class='form-label'>Autorizacion por cargo a tarjeta</label>
-        <div class='form-check'>
-          <input class='form-check-input' type='radio' name='acargo' id='flexRadioDefault1' value='si'>
-          <label class='form-check-label' for='flexRadioDefault1'>
-            Si
-          </label>
-        </div>
-        <div class='form-check'>
-          <input class='form-check-input' type='radio' name='acargo' id='flexRadioDefault2' value='no' checked>
-          <label class='form-check-label' for='flexRadioDefault2'>
-            No
-          </label>
-        </div>
-      </div>";
-      }
-
-      switch ($row["mpago"]){
-        case "1":
-            echo "<div class='col-md-4'>
-        <label for='inputPassword4' class='form-label'>Metodo de Pago</label>
-        <select class='form-select' aria-label='Default select example' id='mpago' name='mpago'>
-          <option value='1' selected>Efectivo</option>
-          <option value='2'>Tarjeta de credito/debito</option>
-          <option value='3'>Transferencia Bancaria</option>
-          <option value='4'>Deposito a cuenta bancaria</option>
-        </select>
-      </div>";
-            break;
-            case "2":
-                echo "<div class='col-md-4'>
-        <label for='inputPassword4' class='form-label'>Metodo de Pago</label>
-        <select class='form-select' aria-label='Default select example' id='mpago' name='mpago'>
-          <option value='1'>Efectivo</option>
-          <option value='2' selected>Tarjeta de credito/debito</option>
-          <option value='3'>Transferencia Bancaria</option>
-          <option value='4'>Deposito a cuenta bancaria</option>
-        </select>
-      </div>";
-                break;
-                case "3":
-                    echo "<div class='col-md-4'>
-        <label for='inputPassword4' class='form-label'>Metodo de Pago</label>
-        <select class='form-select' aria-label='Default select example' id='mpago' name='mpago'>
-          <option value='1'>Efectivo</option>
-          <option value='2'>Tarjeta de credito/debito</option>
-          <option value='3' selected>Transferencia Bancaria</option>
-          <option value='4'>Deposito a cuenta bancaria</option>
-        </select>
-      </div>";
-                    break;        
-                    case "4":
-                        echo "<div class='col-md-4'>
-        <label for='inputPassword4' class='form-label'>Metodo de Pago</label>
-        <select class='form-select' aria-label='Default select example' id='mpago' name='mpago'>
-          <option value='1'>Efectivo</option>
-          <option value='2'>Tarjeta de credito/debito</option>
-          <option value='3'>Transferencia Bancaria</option>
-          <option value='4' selected>Deposito a cuenta bancaria</option>
-        </select>
-      </div>";
-                        break;        
-         }
-      echo "
-      <div class='col-md-4'>
-        <label for='inputPassword4' class='form-label'>Vigencia de Cargos/Mes</label>
-        <input type='number' class='form-control' id='cmes' name='cmes'  value='".$row['vigencia']."' min='1'>
-      </div>
-      <div class='col-md-4'>
-        <label for='inputPassword4' class='form-label'>Banco</label>
-        <input type='text' class='form-control' id='banco' name='banco'  value='".$row['banco']."' disabled value=''>
-      </div>
-      <div class='col-md-4'>
-        <label for='inputPassword4' class='form-label'>No de Tarjeta</label>
-        <input type='text' class='form-control' id='ntarjeta' name='ntarjeta' disabled maxlength='16'  value='".$row['notarjeta']."'>
-      </div>
-
-      <div class='col-md-12 centrar space'>
-        <span class='titulo'>Servicios Adicionales</span>
-      </div>
-      <div class='col-md-4'>
-        <label for='inputPassword4' class='form-label'>Servicio Adicional 1</label>
-        <input type='text' class='form-control' id='sadicional1' name='sadicional1'  value='".$row['sadicional1']."'>
-      </div>
-      <div class='col-md-8'>
-        <label for='inputPassword4' class='form-label'>Descripcion</label>
-        <input type='text' class='form-control' id='sdescripcion1' name='sdescripcion1'  value='".$row['dadicional1']."'>
-      </div>
-      <div class='col-md-4'>
-        <label for='inputPassword4' class='form-label'>Costo</label>
-        <input type='text' class='form-control' id='scosto1' name='scosto1'  value='".$row['costoa1']."'>
-      </div>
-      <div class='col-8'></div>
-      <div class='col-md-4'>
-        <label for='inputPassword4' class='form-label'>Servicio Adicional 2</label>
-        <input type='text' class='form-control' id='sadicional2' name='sadicional2'  value='".$row['sadicional2']."'>
-      </div>
-      <div class='col-md-8'>
-        <label for='inputPassword4' class='form-label'>Descripcion</label>
-        <input type='text' class='form-control' id='sdescripcion2' name='sdescripcion2'  value='".$row['dadicional2']."'>
-      </div>
-      <div class='col-md-4'>
-        <label for='inputPassword4' class='form-label'>Costo</label>
-        <input type='text' class='form-control' id='scosto2' name='scosto2'  value='".$row['costoa2']."'>
-      </div>
-      <div class='col-8'></div>
-      <div class='col-md-12 centrar space'>
-        <span>Facturables (Ejemplo: Costo por cambio de domicilio, Costos administrativos adicionales)</span>
-      </div>
-
-      <div class='col-md-4'>
-        <label for='inputPassword4' class='form-label'>Facturable 1</label>
-        <input type='text' class='form-control' id='fadicional1' name='fadicional1'  value='".$row['sfacturable1']."'>
-      </div>
-      <div class='col-md-8'>
-        <label for='inputPassword4' class='form-label'>Descripcion</label>
-        <input type='text' class='form-control' id='fdescripcion1' name='fdescripcion1'  value='".$row['dfacturable1']."'>
-      </div>
-      <div class='col-md-4'>
-        <label for='inputPassword4' class='form-label'>Costo</label>
-        <input type='text' class='form-control' id='fcosto1' name='fcosto1'  value='".$row['costof1']."'>
-      </div>
-      <div class='col-8'></div>
-      <div class='col-md-4'>
-        <label for='inputPassword4' class='form-label'>Facturable 2</label>
-        <input type='text' class='form-control' id='fadicional2' name='fadicional2'  value='".$row['sfacturable2']."'>
-      </div>
-      <div class='col-md-8'>
-        <label for='inputPassword4' class='form-label'>Descripcion</label>
-        <input type='text' class='form-control' id='fdescripcion2' name='fdescripcion2'  value='".$row['dfacturable2']."'>
-      </div>
-      <div class='col-md-4'>
-        <label for='inputPassword4' class='form-label'>Costo</label>
-        <input type='text' class='form-control' id='fcosto2' name='fcosto2'  value='".$row['costof2']."'>
-      </div>
-      <div class='col-8'></div>
-      <label class='form-label space'>Recepcion de Documentos</label>
-      <div class='col-md-4 space'>";
-      
-      if($row['ccontrato']== '0'){
-            echo "
-        <div class='form-check'>
-          <input class='form-check-input' type='checkbox' value='' id='ccontrato' name='ccontrato'>
-          <label class='form-check-label' for='ccontrato'>
-            Copia de contrato y caratula
-          </label>
-        </div>
-        
-      </div>";
-      } else {
-        echo " <div class='form-check'>
-          <input class='form-check-input' type='checkbox' value='' id='ccontrato' name='ccontrato' checked>
-          <label class='form-check-label' for='ccontrato'>
-            Copia de contrato y caratula
-          </label>
-        </div>";
-      }
-
-      if($row['ccontrato']== '0'){
-            echo "<div class='form-check'>
-          <input class='form-check-input' type='checkbox' value='' id='cdminimos' name='cdminimos'>
-          <label class='form-check-label' for='cdminimos'>
-            Carta de derechos minimos
-          </label>
-        </div>";
-      } else {
-        echo " <div class='form-check'>
-          <input class='form-check-input' type='checkbox' value='' id='cdminimos' name='cdminimos' checked>
-          <label class='form-check-label' for='cdminimos'>
-            Carta de derechos minimos
-          </label>
-        </div>";
-      }
-
-    echo "</div>
-    <div class='row'>
-      <div class='col-md-4'>
-        <label for='inputPassword4' class='form-label'>Ciudad</label>
-        <input type='text' class='form-control requerido' id='ciudad' name='ciudad' value='".$row['cciudad']."' required>
-      </div>
-
-      <!-- ====== Sección Cancelación (opcional) ====== -->
-      <div class='col-md-12 centrar space'>
-        <span class='titulo'>Cancelación (opcional)</span>
-      </div>
-
-      <div class='col-md-8'>
-        <label for='equipos_devueltos' class='form-label'>Equipos devueltos</label>
-        <textarea class='form-control' id='equipos_devueltos' name='equipos_devueltos' rows='3'
-          placeholder='Ej: ONT Huawei SN12345, Router TP-Link SN67890...'>".$equiposDevueltosVal."</textarea>
-        <div class='form-text'>Si el contrato está cancelado, aquí queda el detalle de los equipos recibidos.</div>
-      </div>
-
-      <div class='col-md-4'>
-        <label for='fecha_cancelacion' class='form-label'>Fecha de cancelación</label>
-        <input type='datetime-local' class='form-control' id='fecha_cancelacion' name='fecha_cancelacion' value='".$fechaCancInput."'>
-        <div class='form-text'>Déjalo vacío para mantenerla en NULL.</div>
-      </div>
-      <!-- ====== /Sección Cancelación ====== -->
-
-      <div class='col-6 col-lg-12 space'>
-        <button type='button' class='btn btn-primary' onclick='updateContrato()'>Actualizar datos</button>
       </div>
     </div>
-  </form>";
-        echo "<div id='resultado'></div>";
-    }
-}
-$conexion->close();
-?>
+  </section>
+
+  <!-- Contacto del cliente -->
+  <section class="rounded-3xl border border-white/10 bg-[#0b1a2d] p-6 shadow-xl">
+    <div class="mb-5">
+      <h3 class="text-lg font-semibold text-cyan-300">Contacto del cliente</h3>
+    </div>
+
+    <div class="grid grid-cols-1 gap-5 md:grid-cols-12">
+      <div class="md:col-span-6">
+        <label for="name" class="mb-2 block text-sm font-medium text-white/80">NOMBRE/RAZÓN O DENOMINACIÓN SOCIAL</label>
+        <input type="text" id="name" name="name" value="<?= h($row['nombre']) ?>" required
+          class="requerido w-full rounded-2xl border border-white/10 bg-[#071322] px-4 py-3 text-white outline-none focus:border-cyan-400/40">
+      </div>
+
+      <div class="md:col-span-6">
+        <label for="rlegal" class="mb-2 block text-sm font-medium text-white/80">REPRESENTANTE LEGAL</label>
+        <input type="text" id="rlegal" name="rlegal" value="<?= h($row['rlegal']) ?>"
+          class="w-full rounded-2xl border border-white/10 bg-[#071322] px-4 py-3 text-white outline-none focus:border-cyan-400/40">
+      </div>
+
+      <div class="md:col-span-4">
+        <label for="street" class="mb-2 block text-sm font-medium text-white/80">Calle</label>
+        <input type="text" id="street" name="calle" value="<?= h($row['calle']) ?>" required
+          class="requerido w-full rounded-2xl border border-white/10 bg-[#071322] px-4 py-3 text-white outline-none focus:border-cyan-400/40">
+      </div>
+
+      <div class="md:col-span-2">
+        <label for="number" class="mb-2 block text-sm font-medium text-white/80">Número</label>
+        <input type="text" id="number" name="number" value="<?= h($row['numero']) ?>" required
+          class="requerido w-full rounded-2xl border border-white/10 bg-[#071322] px-4 py-3 text-white outline-none focus:border-cyan-400/40">
+      </div>
+
+      <div class="md:col-span-2">
+        <label for="colonia" class="mb-2 block text-sm font-medium text-white/80">Colonia</label>
+        <input type="text" id="colonia" name="colonia" value="<?= h($row['colonia']) ?>" required
+          class="requerido w-full rounded-2xl border border-white/10 bg-[#071322] px-4 py-3 text-white outline-none focus:border-cyan-400/40">
+      </div>
+
+      <div class="md:col-span-4">
+        <label for="municipio" class="mb-2 block text-sm font-medium text-white/80">Municipio</label>
+        <input type="text" id="municipio" name="municipio" value="<?= h($row['municipio']) ?>" required onchange="cambioCiudad()"
+          class="requerido w-full rounded-2xl border border-white/10 bg-[#071322] px-4 py-3 text-white outline-none focus:border-cyan-400/40">
+      </div>
+
+      <div class="md:col-span-4">
+        <label for="cp" class="mb-2 block text-sm font-medium text-white/80">CP</label>
+        <input type="text" id="cp" name="cp" value="<?= h($row['cp']) ?>"
+          class="w-full rounded-2xl border border-white/10 bg-[#071322] px-4 py-3 text-white outline-none focus:border-cyan-400/40">
+      </div>
+
+      <div class="md:col-span-2">
+        <label for="estado" class="mb-2 block text-sm font-medium text-white/80">Estado</label>
+        <input type="text" id="estado" name="estado" value="<?= h($row['estado']) ?>" required
+          class="requerido w-full rounded-2xl border border-white/10 bg-[#071322] px-4 py-3 text-white outline-none focus:border-cyan-400/40">
+      </div>
+
+      <div class="md:col-span-4">
+        <label for="telefono" class="mb-2 block text-sm font-medium text-white/80">Teléfono</label>
+        <input type="text" id="telefono" name="telefono" value="<?= h($row['telefono']) ?>" required
+          class="requerido w-full rounded-2xl border border-white/10 bg-[#071322] px-4 py-3 text-white outline-none focus:border-cyan-400/40">
+      </div>
+
+      <div class="md:col-span-4">
+        <label class="mb-2 block text-sm font-medium text-white/80">TELÉFONO MÓVIL/FIJO</label>
+        <div class="flex gap-3">
+          <label class="flex flex-1 items-center gap-3 rounded-2xl border border-white/10 bg-[#071322] px-4 py-3">
+            <input type="radio" name="ttipo" id="movil" value="movil" <?= checkedAttr(($row['ttelefono'] ?? '') === 'movil') ?> class="h-4 w-4">
+            <span class="text-sm text-white/80">Fijo</span>
+          </label>
+
+          <label class="flex flex-1 items-center gap-3 rounded-2xl border border-white/10 bg-[#071322] px-4 py-3">
+            <input type="radio" name="ttipo" id="fijo" value="fijo" <?= checkedAttr(($row['ttelefono'] ?? '') === 'fijo') ?> class="h-4 w-4">
+            <span class="text-sm text-white/80">Móvil</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="md:col-span-4">
+        <label for="rfc" class="mb-2 block text-sm font-medium text-white/80">RFC</label>
+        <input type="text" id="rfc" name="rfc" maxlength="13" value="<?= h($row['rfc']) ?>"
+          class="w-full rounded-2xl border border-white/10 bg-[#071322] px-4 py-3 text-white outline-none focus:border-cyan-400/40">
+      </div>
+    </div>
+  </section>
+
+  <!-- Servicio -->
+  <section class="rounded-3xl border border-white/10 bg-[#0b1a2d] p-6 shadow-xl">
+    <div class="mb-5">
+      <h3 class="text-lg font-semibold text-cyan-300">Servicio de internet fijo en casa</h3>
+    </div>
+
+    <div class="grid grid-cols-1 gap-5 md:grid-cols-12">
+      <div class="md:col-span-4">
+        <label for="tarifa" class="mb-2 block text-sm font-medium text-white/80">Tarifa</label>
+        <select id="tarifa" name="tarifa"
+          class="w-full rounded-2xl border border-white/10 bg-[#071322] px-4 py-3 text-white outline-none focus:border-cyan-400/40">
+          <option value="1" <?= selected($row['tarifa'], '1') ?>>Residencial 7 MB/s</option>
+          <option value="2" <?= selected($row['tarifa'], '2') ?>>Residencial 10 MB/s</option>
+          <option value="3" <?= selected($row['tarifa'], '3') ?>>Residencial 15 MB/s</option>
+          <option value="4" <?= selected($row['tarifa'], '4') ?>>Residencial 20 MB/s</option>
+          <option value="7" <?= selected($row['tarifa'], '7') ?>>Residencial 30 MB/s</option>
+          <option value="5" <?= selected($row['tarifa'], '5') ?>>Residencial 40 MB/s</option>
+          <option value="6" <?= selected($row['tarifa'], '6') ?>>Residencial 50 MB/s</option>
+          <option value="8" <?= selected($row['tarifa'], '8') ?>>Residencial 80 MB/s</option>
+        </select>
+      </div>
+
+      <div class="md:col-span-4">
+        <label for="totalm" class="mb-2 block text-sm font-medium text-white/80">Total mensualidad</label>
+        <input type="text" id="totalm" name="totalm" value="<?= h($row['tmensualidad']) ?>" required
+          class="requerido w-full rounded-2xl border border-white/10 bg-[#071322] px-4 py-3 text-white outline-none focus:border-cyan-400/40">
+      </div>
+
+      <div class="md:col-span-4">
+        <label for="reconexion" class="mb-2 block text-sm font-medium text-white/80">Aplica tarifa por reconexión</label>
+        <select id="reconexion" name="reconexion"
+          class="w-full rounded-2xl border border-white/10 bg-[#071322] px-4 py-3 text-white outline-none focus:border-cyan-400/40">
+          <option value="1" <?= selected($row['reconexion'], '1') ?>>No</option>
+          <option value="2" <?= selected($row['reconexion'], '2') ?>>Sí</option>
+        </select>
+      </div>
+
+      <div class="md:col-span-4">
+        <label for="descm" class="mb-2 block text-sm font-medium text-white/80">Monto por desconexión</label>
+        <input type="text" id="descm" name="descm" disabled value="<?= h($row['mdesconexion']) ?>"
+          class="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white/60 outline-none">
+      </div>
+
+      <div class="md:col-span-4">
+        <label for="pmeses" class="mb-2 block text-sm font-medium text-white/80">Plazo mínimo en meses (0-12)</label>
+        <input type="number" id="pmeses" name="pmeses" min="0" value="<?= h($row['plazo']) ?>" required
+          class="requerido w-full rounded-2xl border border-white/10 bg-[#071322] px-4 py-3 text-white outline-none focus:border-cyan-400/40">
+        <p class="mt-2 text-xs text-white/50">Pagando el costo remanente del equipo sin penalidad por el servicio.</p>
+      </div>
+    </div>
+
+    <div class="mt-5 rounded-2xl border border-cyan-400/10 bg-cyan-400/5 p-4 text-sm text-cyan-100/90">
+      En el estado de cuenta y/o factura se podrá visualizar la fecha de corte del servicio y fecha de pago.
+    </div>
+  </section>
+
+  <!-- Equipo -->
+  <section class="rounded-3xl border border-white/10 bg-[#0b1a2d] p-6 shadow-xl">
+    <div class="mb-5">
+      <h3 class="text-lg font-semibold text-cyan-300">Datos del equipo</h3>
+    </div>
+
+    <div class="grid grid-cols-1 gap-5 md:grid-cols-12">
+      <div class="md:col-span-4">
+        <label for="modemt" class="mb-2 block text-sm font-medium text-white/80">Modem entregado</label>
+        <select id="modemt" name="modemt"
+          class="w-full rounded-2xl border border-white/10 bg-[#071322] px-4 py-3 text-white outline-none focus:border-cyan-400/40">
+          <option value="1" <?= selected($row['modeme'], '1') ?>>Comodato</option>
+          <option value="2" <?= selected($row['modeme'], '2') ?>>Compraventa</option>
+        </select>
+      </div>
+
+      <div class="md:col-span-4">
+        <label for="marca" class="mb-2 block text-sm font-medium text-white/80">Marca</label>
+        <input type="text" id="marca" name="marca" value="<?= h($row['marca']) ?>" required
+          class="requerido w-full rounded-2xl border border-white/10 bg-[#071322] px-4 py-3 text-white outline-none focus:border-cyan-400/40">
+      </div>
+
+      <div class="md:col-span-4">
+        <label for="modelo" class="mb-2 block text-sm font-medium text-white/80">Modelo</label>
+        <input type="text" id="modelo" name="modelo" value="<?= h($row['modelo']) ?>" required
+          class="requerido w-full rounded-2xl border border-white/10 bg-[#071322] px-4 py-3 text-white outline-none focus:border-cyan-400/40">
+      </div>
+
+      <div class="md:col-span-4">
+        <label for="serie" class="mb-2 block text-sm font-medium text-white/80">Número de serie</label>
+        <input type="text" id="serie" name="serie" value="<?= h($row['nserie']) ?>" required
+          class="requerido w-full rounded-2xl border border-white/10 bg-[#071322] px-4 py-3 text-white outline-none focus:border-cyan-400/40">
+      </div>
+
+      <div class="md:col-span-4">
+        <label for="nequipos" class="mb-2 block text-sm font-medium text-white/80">Número de equipos</label>
+        <input type="number" id="nequipos" name="nequipos" min="1" value="<?= h($row['nequipo']) ?>" required
+          class="requerido w-full rounded-2xl border border-white/10 bg-[#071322] px-4 py-3 text-white outline-none focus:border-cyan-400/40">
+      </div>
+
+      <div class="md:col-span-4">
+        <label for="tpago" class="mb-2 block text-sm font-medium text-white/80">Pago único / Mes</label>
+        <select id="tpago" name="tpago"
+          class="w-full rounded-2xl border border-white/10 bg-[#071322] px-4 py-3 text-white outline-none focus:border-cyan-400/40">
+          <option value="1" <?= selected($row['pagoum'], '1') ?>>Pago Único</option>
+          <option value="2" <?= selected($row['pagoum'], '2') ?>>Mes</option>
+          <option value="3" <?= selected($row['pagoum'], '3') ?>>Vacío</option>
+        </select>
+      </div>
+
+      <div class="md:col-span-4">
+        <label for="cequipos" class="mb-2 block text-sm font-medium text-white/80">Cantidad a pagar por equipo</label>
+        <input type="number" id="cequipos" name="cequipos" value="<?= h($row['pequipo']) ?>"
+          class="w-full rounded-2xl border border-white/10 bg-[#071322] px-4 py-3 text-white outline-none focus:border-cyan-400/40">
+      </div>
+    </div>
+
+    <div class="mt-5 rounded-2xl border border-amber-400/15 bg-amber-400/5 p-4 text-sm text-amber-100/90">
+      Garantía de cumplimiento de obligación. Pagaré para garantizar la devolución del equipo entregado solo en comodato.
+    </div>
+  </section>
+
+  <!-- Instalación -->
+  <section class="rounded-3xl border border-white/10 bg-[#0b1a2d] p-6 shadow-xl">
+    <div class="mb-5">
+      <h3 class="text-lg font-semibold text-cyan-300">Instalación de equipo</h3>
+    </div>
+
+    <div class="grid grid-cols-1 gap-5 md:grid-cols-12">
+      <div class="md:col-span-6">
+        <label for="domicilioi" class="mb-2 block text-sm font-medium text-white/80">Domicilio de la instalación</label>
+        <input type="text" id="domicilioi" name="domicilioi" value="<?= h($row['domicilioi']) ?>" required
+          class="requerido w-full rounded-2xl border border-white/10 bg-[#071322] px-4 py-3 text-white outline-none focus:border-cyan-400/40">
+      </div>
+
+      <div class="md:col-span-3">
+        <label for="fechai" class="mb-2 block text-sm font-medium text-white/80">Fecha</label>
+        <input type="date" id="fechai" name="fechai" value="<?= h($row['fechai']) ?>" required
+          class="requerido w-full rounded-2xl border border-white/10 bg-[#071322] px-4 py-3 text-white outline-none focus:border-cyan-400/40">
+      </div>
+
+      <div class="md:col-span-3">
+        <label for="horai" class="mb-2 block text-sm font-medium text-white/80">Hora</label>
+        <input type="time" id="horai" name="horai" value="<?= h($row['hora']) ?>" required
+          class="requerido w-full rounded-2xl border border-white/10 bg-[#071322] px-4 py-3 text-white outline-none focus:border-cyan-400/40">
+      </div>
+
+      <div class="md:col-span-4">
+        <label for="costoi" class="mb-2 block text-sm font-medium text-white/80">Costo</label>
+        <input type="text" id="costoi" name="costoi" value="<?= h($row['costoi']) ?>" required
+          class="requerido w-full rounded-2xl border border-white/10 bg-[#071322] px-4 py-3 text-white outline-none focus:border-cyan-400/40">
+      </div>
+    </div>
+
+    <div class="mt-5 rounded-2xl border border-cyan-400/10 bg-cyan-400/5 p-4 text-sm text-cyan-100/90">
+      El proveedor deberá efectuar las instalaciones y empezar a prestar el servicio en un plazo que no exceda de 10 días hábiles a partir de la firma del contrato.
+    </div>
+  </section>
+
+  <!-- Método de pago -->
+  <section class="rounded-3xl border border-white/10 bg-[#0b1a2d] p-6 shadow-xl">
+    <div class="mb-5">
+      <h3 class="text-lg font-semibold text-cyan-300">Método de pago</h3>
+    </div>
+
+    <div class="grid grid-cols-1 gap-5 md:grid-cols-12">
+      <div class="md:col-span-4">
+        <label class="mb-2 block text-sm font-medium text-white/80">Autorización por cargo a tarjeta</label>
+        <div class="space-y-3">
+          <label class="flex items-center gap-3 rounded-2xl border border-white/10 bg-[#071322] px-4 py-3">
+            <input type="radio" name="acargo" value="si" <?= checkedAttr(($row['autorizacion'] ?? '') === 'si') ?> class="h-4 w-4">
+            <span class="text-sm text-white/80">Sí</span>
+          </label>
+          <label class="flex items-center gap-3 rounded-2xl border border-white/10 bg-[#071322] px-4 py-3">
+            <input type="radio" name="acargo" value="no" <?= checkedAttr(($row['autorizacion'] ?? '') !== 'si') ?> class="h-4 w-4">
+            <span class="text-sm text-white/80">No</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="md:col-span-4">
+        <label for="mpago" class="mb-2 block text-sm font-medium text-white/80">Método de pago</label>
+        <select id="mpago" name="mpago"
+          class="w-full rounded-2xl border border-white/10 bg-[#071322] px-4 py-3 text-white outline-none focus:border-cyan-400/40">
+          <option value="1" <?= selected($row['mpago'], '1') ?>>Efectivo</option>
+          <option value="2" <?= selected($row['mpago'], '2') ?>>Tarjeta de crédito/débito</option>
+          <option value="3" <?= selected($row['mpago'], '3') ?>>Transferencia bancaria</option>
+          <option value="4" <?= selected($row['mpago'], '4') ?>>Depósito a cuenta bancaria</option>
+        </select>
+      </div>
+
+      <div class="md:col-span-4">
+        <label for="cmes" class="mb-2 block text-sm font-medium text-white/80">Vigencia de cargos / Mes</label>
+        <input type="number" id="cmes" name="cmes" min="1" value="<?= h($row['vigencia']) ?>"
+          class="w-full rounded-2xl border border-white/10 bg-[#071322] px-4 py-3 text-white outline-none focus:border-cyan-400/40">
+      </div>
+
+      <div class="md:col-span-4">
+        <label for="banco" class="mb-2 block text-sm font-medium text-white/80">Banco</label>
+        <input type="text" id="banco" name="banco" value="<?= h($row['banco']) ?>" disabled
+          class="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white/60 outline-none">
+      </div>
+
+      <div class="md:col-span-4">
+        <label for="ntarjeta" class="mb-2 block text-sm font-medium text-white/80">No. de tarjeta</label>
+        <input type="text" id="ntarjeta" name="ntarjeta" maxlength="16" value="<?= h($row['notarjeta']) ?>" disabled
+          class="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white/60 outline-none">
+      </div>
+    </div>
+  </section>
+
+  <!-- Servicios adicionales -->
+  <section class="rounded-3xl border border-white/10 bg-[#0b1a2d] p-6 shadow-xl">
+    <div class="mb-5">
+      <h3 class="text-lg font-semibold text-cyan-300">Servicios adicionales</h3>
+    </div>
+
+    <div class="grid grid-cols-1 gap-5 md:grid-cols-12">
+      <div class="md:col-span-4">
+        <label for="sadicional1" class="mb-2 block text-sm font-medium text-white/80">Servicio adicional 1</label>
+        <input type="text" id="sadicional1" name="sadicional1" value="<?= h($row['sadicional1']) ?>"
+          class="w-full rounded-2xl border border-white/10 bg-[#071322] px-4 py-3 text-white outline-none focus:border-cyan-400/40">
+      </div>
+
+      <div class="md:col-span-8">
+        <label for="sdescripcion1" class="mb-2 block text-sm font-medium text-white/80">Descripción</label>
+        <input type="text" id="sdescripcion1" name="sdescripcion1" value="<?= h($row['dadicional1']) ?>"
+          class="w-full rounded-2xl border border-white/10 bg-[#071322] px-4 py-3 text-white outline-none focus:border-cyan-400/40">
+      </div>
+
+      <div class="md:col-span-4">
+        <label for="scosto1" class="mb-2 block text-sm font-medium text-white/80">Costo</label>
+        <input type="text" id="scosto1" name="scosto1" value="<?= h($row['costoa1']) ?>"
+          class="w-full rounded-2xl border border-white/10 bg-[#071322] px-4 py-3 text-white outline-none focus:border-cyan-400/40">
+      </div>
+
+      <div class="hidden md:col-span-8 md:block"></div>
+
+      <div class="md:col-span-4">
+        <label for="sadicional2" class="mb-2 block text-sm font-medium text-white/80">Servicio adicional 2</label>
+        <input type="text" id="sadicional2" name="sadicional2" value="<?= h($row['sadicional2']) ?>"
+          class="w-full rounded-2xl border border-white/10 bg-[#071322] px-4 py-3 text-white outline-none focus:border-cyan-400/40">
+      </div>
+
+      <div class="md:col-span-8">
+        <label for="sdescripcion2" class="mb-2 block text-sm font-medium text-white/80">Descripción</label>
+        <input type="text" id="sdescripcion2" name="sdescripcion2" value="<?= h($row['dadicional2']) ?>"
+          class="w-full rounded-2xl border border-white/10 bg-[#071322] px-4 py-3 text-white outline-none focus:border-cyan-400/40">
+      </div>
+
+      <div class="md:col-span-4">
+        <label for="scosto2" class="mb-2 block text-sm font-medium text-white/80">Costo</label>
+        <input type="text" id="scosto2" name="scosto2" value="<?= h($row['costoa2']) ?>"
+          class="w-full rounded-2xl border border-white/10 bg-[#071322] px-4 py-3 text-white outline-none focus:border-cyan-400/40">
+      </div>
+    </div>
+  </section>
+
+  <!-- Facturables -->
+  <section class="rounded-3xl border border-white/10 bg-[#0b1a2d] p-6 shadow-xl">
+    <div class="mb-5">
+      <h3 class="text-lg font-semibold text-cyan-300">Facturables</h3>
+      <p class="mt-1 text-sm text-white/60">Ejemplo: costo por cambio de domicilio, costos administrativos adicionales.</p>
+    </div>
+
+    <div class="grid grid-cols-1 gap-5 md:grid-cols-12">
+      <div class="md:col-span-4">
+        <label for="fadicional1" class="mb-2 block text-sm font-medium text-white/80">Facturable 1</label>
+        <input type="text" id="fadicional1" name="fadicional1" value="<?= h($row['sfacturable1']) ?>"
+          class="w-full rounded-2xl border border-white/10 bg-[#071322] px-4 py-3 text-white outline-none focus:border-cyan-400/40">
+      </div>
+
+      <div class="md:col-span-8">
+        <label for="fdescripcion1" class="mb-2 block text-sm font-medium text-white/80">Descripción</label>
+        <input type="text" id="fdescripcion1" name="fdescripcion1" value="<?= h($row['dfacturable1']) ?>"
+          class="w-full rounded-2xl border border-white/10 bg-[#071322] px-4 py-3 text-white outline-none focus:border-cyan-400/40">
+      </div>
+
+      <div class="md:col-span-4">
+        <label for="fcosto1" class="mb-2 block text-sm font-medium text-white/80">Costo</label>
+        <input type="text" id="fcosto1" name="fcosto1" value="<?= h($row['costof1']) ?>"
+          class="w-full rounded-2xl border border-white/10 bg-[#071322] px-4 py-3 text-white outline-none focus:border-cyan-400/40">
+      </div>
+
+      <div class="hidden md:col-span-8 md:block"></div>
+
+      <div class="md:col-span-4">
+        <label for="fadicional2" class="mb-2 block text-sm font-medium text-white/80">Facturable 2</label>
+        <input type="text" id="fadicional2" name="fadicional2" value="<?= h($row['sfacturable2']) ?>"
+          class="w-full rounded-2xl border border-white/10 bg-[#071322] px-4 py-3 text-white outline-none focus:border-cyan-400/40">
+      </div>
+
+      <div class="md:col-span-8">
+        <label for="fdescripcion2" class="mb-2 block text-sm font-medium text-white/80">Descripción</label>
+        <input type="text" id="fdescripcion2" name="fdescripcion2" value="<?= h($row['dfacturable2']) ?>"
+          class="w-full rounded-2xl border border-white/10 bg-[#071322] px-4 py-3 text-white outline-none focus:border-cyan-400/40">
+      </div>
+
+      <div class="md:col-span-4">
+        <label for="fcosto2" class="mb-2 block text-sm font-medium text-white/80">Costo</label>
+        <input type="text" id="fcosto2" name="fcosto2" value="<?= h($row['costof2']) ?>"
+          class="w-full rounded-2xl border border-white/10 bg-[#071322] px-4 py-3 text-white outline-none focus:border-cyan-400/40">
+      </div>
+    </div>
+  </section>
+
+  <!-- Documentos -->
+  <section class="rounded-3xl border border-white/10 bg-[#0b1a2d] p-6 shadow-xl">
+    <div class="mb-5">
+      <h3 class="text-lg font-semibold text-cyan-300">Recepción de documentos</h3>
+    </div>
+
+    <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+      <label class="flex items-center gap-3 rounded-2xl border border-white/10 bg-[#071322] px-4 py-3">
+        <input type="checkbox" id="ccontrato" name="ccontrato" <?= checkedAttr((string)$row['ccontrato'] === '1') ?> class="h-4 w-4 rounded">
+        <span class="text-sm text-white/80">Copia de contrato y carátula</span>
+      </label>
+
+      <label class="flex items-center gap-3 rounded-2xl border border-white/10 bg-[#071322] px-4 py-3">
+        <input type="checkbox" id="cdminimos" name="cdminimos" <?= checkedAttr((string)$row['cdminimos'] === '1') ?> class="h-4 w-4 rounded">
+        <span class="text-sm text-white/80">Carta de derechos mínimos</span>
+      </label>
+    </div>
+  </section>
+
+  <!-- Ciudad + cancelación -->
+  <section class="rounded-3xl border border-white/10 bg-[#0b1a2d] p-6 shadow-xl">
+    <div class="grid grid-cols-1 gap-5 md:grid-cols-12">
+      <div class="md:col-span-4">
+        <label for="ciudad" class="mb-2 block text-sm font-medium text-white/80">Ciudad</label>
+        <input type="text" id="ciudad" name="ciudad" value="<?= h($row['cciudad']) ?>" required
+          class="requerido w-full rounded-2xl border border-white/10 bg-[#071322] px-4 py-3 text-white outline-none focus:border-cyan-400/40">
+      </div>
+
+      <div class="md:col-span-12 mt-4">
+        <h3 class="text-lg font-semibold text-cyan-300">Cancelación (opcional)</h3>
+      </div>
+
+      <div class="md:col-span-8">
+        <label for="equipos_devueltos" class="mb-2 block text-sm font-medium text-white/80">Equipos devueltos</label>
+        <textarea id="equipos_devueltos" name="equipos_devueltos" rows="3"
+          class="w-full rounded-2xl border border-white/10 bg-[#071322] px-4 py-3 text-white outline-none focus:border-cyan-400/40"
+          placeholder="Ej: ONT Huawei SN12345, Router TP-Link SN67890..."><?= $equiposDevueltosVal ?></textarea>
+        <p class="mt-2 text-xs text-white/50">Si el contrato está cancelado, aquí queda el detalle de los equipos recibidos.</p>
+      </div>
+
+      <div class="md:col-span-4">
+        <label for="fecha_cancelacion" class="mb-2 block text-sm font-medium text-white/80">Fecha de cancelación</label>
+        <input type="datetime-local" id="fecha_cancelacion" name="fecha_cancelacion" value="<?= h($fechaCancInput) ?>"
+          class="w-full rounded-2xl border border-white/10 bg-[#071322] px-4 py-3 text-white outline-none focus:border-cyan-400/40">
+        <p class="mt-2 text-xs text-white/50">Déjalo vacío para mantenerla en NULL.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Acciones -->
+  <section class="rounded-3xl border border-white/10 bg-white/5 p-6 shadow-xl">
+    <div class="flex flex-col gap-4 md:flex-row md:items-center">
+      <button type="button" onclick="updateContrato()"
+        class="inline-flex items-center justify-center rounded-2xl bg-cyan-500 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-cyan-500/20 transition hover:bg-cyan-400">
+        Actualizar datos
+      </button>
+
+      <div id="resultado" class="min-h-[48px] flex-1 rounded-2xl border border-white/10 bg-[#071322] px-4 py-3 text-sm text-white/80"></div>
+    </div>
+  </section>
+</form>
